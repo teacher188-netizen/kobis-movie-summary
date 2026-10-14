@@ -1,0 +1,43 @@
+
+name: Update KOBIS Movie Summary
+
+on:
+  schedule:
+    - cron: "0 22 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Get repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install packages
+        run: pip install -r requirements.txt
+
+      - name: Build summary CSV
+        env:
+          KOBIS_API_KEY: ${{ secrets.KOBIS_API_KEY }}
+        run: python build_summary.py
+
+      - name: Commit updated files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add kobis_movie_summary.csv movie_metadata.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Update KOBIS movie summary"
+            git push
+          else
+            echo "No changes to commit."
+          fi
